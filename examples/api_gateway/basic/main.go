@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/webbgeorge/lambdah"
 	"net/http"
+
+	"github.com/webbgeorge/lambdah"
+
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
@@ -18,6 +20,13 @@ func newHandler() lambdah.APIGatewayProxyHandlerFunc {
 		err := c.Bind(&data)
 		if err != nil {
 			return err
+		}
+
+		if data.Name == "Dave" {
+			return lambdah.APIGatewayProxyError{
+				StatusCode: http.StatusNotAcceptable,
+				Message:    "Dave is not welcome here!",
+			}
 		}
 
 		message := fmt.Sprintf("%s %s", data.Greeting, data.Name)
