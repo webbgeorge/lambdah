@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	h := lambdah.APIGatewayProxyHandler(newHandler())
+	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
 	lambda.Start(h)
 }
 

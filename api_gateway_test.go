@@ -23,7 +23,7 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 		return c.JSON(http.StatusOK, responseData{Status: "all good"})
 	}
 
-	awsHandler := APIGatewayProxyHandler(h)
+	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{}, h)
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -36,12 +36,12 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 	assert.Equal(t, `{"status":"all good"}`, res.Body)
 }
 
-func TestAPIGatewayProxyHandler_ErrorIsHandled(t *testing.T) {
+func TestAPIGatewayProxyHandler_DefaultErrorHandler(t *testing.T) {
 	h := func(c *APIGatewayProxyContext) error {
 		return errors.New("an error happened")
 	}
 
-	awsHandler := APIGatewayProxyHandler(h)
+	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{}, h)
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -52,6 +52,31 @@ func TestAPIGatewayProxyHandler_ErrorIsHandled(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 500, res.StatusCode)
 	assert.Equal(t, `{"message":"Internal server error"}`, res.Body)
+}
+
+func TestAPIGatewayProxyHandler_CustomErrorHandler(t *testing.T) {
+	h := func(c *APIGatewayProxyContext) error {
+		return errors.New("an error happened")
+	}
+
+	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{
+		ErrorHandler: func(c *APIGatewayProxyContext, err error) {
+			type customError struct {
+				Error string `json:"error"`
+			}
+			_ = c.JSON(http.StatusBadRequest, customError{Error: err.Error()})
+		},
+	}, h)
+	res, err := awsHandler(
+		context.Background(),
+		events.APIGatewayProxyRequest{
+			Body: `{"message": "hello"}`,
+		},
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, `{"error":"an error happened"}`, res.Body)
 }
 
 func TestAPIGatewayProxyContext_Bind_Success(t *testing.T) {
@@ -115,19 +140,19 @@ func TestAPIGatewayProxyContext_JSON_WithoutBody(t *testing.T) {
 	assert.Equal(t, ``, c.Response.Body)
 }
 
-func TestAPIGatewayProxyContext_HandleError_UnhandledError(t *testing.T) {
+func TestDefaultAPIGatewayProxyErrorHandler_UnhandledError(t *testing.T) {
 	c := &APIGatewayProxyContext{}
 
-	c.handleError(errors.New("some error"))
+	defaultAPIGatewayProxyErrorHandler(c, errors.New("some error"))
 
 	assert.Equal(t, 500, c.Response.StatusCode)
 	assert.Equal(t, `{"message":"Internal server error"}`, c.Response.Body)
 }
 
-func TestAPIGatewayProxyContext_HandleError_APIGatewayProxyError(t *testing.T) {
+func TestDefaultAPIGatewayProxyErrorHandler_APIGatewayProxyError(t *testing.T) {
 	c := &APIGatewayProxyContext{}
 
-	c.handleError(APIGatewayProxyError{
+	defaultAPIGatewayProxyErrorHandler(c, APIGatewayProxyError{
 		StatusCode: 400,
 		Message:    "Bad request",
 	})

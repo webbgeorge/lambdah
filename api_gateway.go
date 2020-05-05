@@ -10,11 +10,14 @@ import (
 )
 
 // TODO: logging?
-// TODO: allowing users to define error type/structure
 
 type APIGatewayProxyHandlerFunc func(c *APIGatewayProxyContext) error
 
-func APIGatewayProxyHandler(h APIGatewayProxyHandlerFunc) func(
+type APIGatewayProxyHandlerConfig struct {
+	ErrorHandler APIGatewayProxyErrorHandler
+}
+
+func APIGatewayProxyHandler(conf APIGatewayProxyHandlerConfig, h APIGatewayProxyHandlerFunc) func(
 	ctx context.Context,
 	request events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
@@ -29,7 +32,11 @@ func APIGatewayProxyHandler(h APIGatewayProxyHandlerFunc) func(
 
 		err := h(c)
 		if err != nil {
-			c.handleError(err)
+			if conf.ErrorHandler == nil {
+				defaultAPIGatewayProxyErrorHandler(c, err)
+			} else {
+				conf.ErrorHandler(c, err)
+			}
 			return c.Response, nil
 		}
 
@@ -81,7 +88,9 @@ func (c *APIGatewayProxyContext) JSON(statusCode int, body interface{}) error {
 	return nil
 }
 
-func (c *APIGatewayProxyContext) handleError(err error) {
+type APIGatewayProxyErrorHandler func(c *APIGatewayProxyContext, err error)
+
+func defaultAPIGatewayProxyErrorHandler(c *APIGatewayProxyContext, err error) {
 	var apiGatewayErr APIGatewayProxyError
 	switch err := err.(type) {
 	case APIGatewayProxyError:
