@@ -8,12 +8,12 @@ import (
 )
 
 func main() {
-	h := lambdah.APIGatewayHandler(newHandler())
+	h := lambdah.APIGatewayProxyHandler(newHandler())
 	lambda.Start(h)
 }
 
-func newHandler() lambdah.APIGatewayHandlerFunc {
-	return func(c *lambdah.APIGatewayContext) error {
+func newHandler() lambdah.APIGatewayProxyHandlerFunc {
+	return func(c *lambdah.APIGatewayProxyContext) error {
 		var data requestData
 		err := c.Bind(&data)
 		if err != nil {
@@ -33,13 +33,13 @@ type requestData struct {
 
 func (d *requestData) Validate() error {
 	if d.Greeting != "Hi" && d.Greeting != "Hello" {
-		return lambdah.APIGatewayError{
+		return lambdah.APIGatewayProxyError{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Greeting not allowed",
 		}
 	}
 	if d.Name == "" {
-		return lambdah.APIGatewayError{
+		return lambdah.APIGatewayProxyError{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Name is required",
 		}

@@ -12,9 +12,9 @@ import (
 // TODO: logging?
 // TODO: allowing users to define error type/structure
 
-type APIGatewayHandlerFunc func(c *APIGatewayContext) error
+type APIGatewayProxyHandlerFunc func(c *APIGatewayProxyContext) error
 
-func APIGatewayHandler(h APIGatewayHandlerFunc) func(
+func APIGatewayProxyHandler(h APIGatewayProxyHandlerFunc) func(
 	ctx context.Context,
 	request events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
@@ -22,7 +22,7 @@ func APIGatewayHandler(h APIGatewayHandlerFunc) func(
 		ctx context.Context,
 		request events.APIGatewayProxyRequest,
 	) (events.APIGatewayProxyResponse, error) {
-		c := &APIGatewayContext{
+		c := &APIGatewayProxyContext{
 			Context: ctx,
 			Request: request,
 		}
@@ -37,7 +37,7 @@ func APIGatewayHandler(h APIGatewayHandlerFunc) func(
 	}
 }
 
-type APIGatewayContext struct {
+type APIGatewayProxyContext struct {
 	Context  context.Context
 	Request  events.APIGatewayProxyRequest
 	Response events.APIGatewayProxyResponse
@@ -47,16 +47,16 @@ type Validatable interface {
 	Validate() error
 }
 
-type APIGatewayError struct {
+type APIGatewayProxyError struct {
 	StatusCode int    `json:"-"`
 	Message    string `json:"message"`
 }
 
-func (err APIGatewayError) Error() string {
+func (err APIGatewayProxyError) Error() string {
 	return fmt.Sprintf("status: %d, message: %s", err.StatusCode, err.Message)
 }
 
-func (c *APIGatewayContext) Bind(v interface{}) error {
+func (c *APIGatewayProxyContext) Bind(v interface{}) error {
 	err := json.Unmarshal([]byte(c.Request.Body), v)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (c *APIGatewayContext) Bind(v interface{}) error {
 	return nil
 }
 
-func (c *APIGatewayContext) JSON(statusCode int, body interface{}) error {
+func (c *APIGatewayProxyContext) JSON(statusCode int, body interface{}) error {
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
@@ -81,13 +81,13 @@ func (c *APIGatewayContext) JSON(statusCode int, body interface{}) error {
 	return nil
 }
 
-func (c *APIGatewayContext) handleError(err error) {
-	var apiGatewayErr APIGatewayError
+func (c *APIGatewayProxyContext) handleError(err error) {
+	var apiGatewayErr APIGatewayProxyError
 	switch err := err.(type) {
-	case APIGatewayError:
+	case APIGatewayProxyError:
 		apiGatewayErr = err
 	default:
-		apiGatewayErr = APIGatewayError{
+		apiGatewayErr = APIGatewayProxyError{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Internal server error",
 		}

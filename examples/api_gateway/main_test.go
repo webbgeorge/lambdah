@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewHandler_Success(t *testing.T) {
-	h := lambdah.APIGatewayHandler(newHandler())
+	h := lambdah.APIGatewayProxyHandler(newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
@@ -34,7 +34,7 @@ func TestNewHandler_Success(t *testing.T) {
 }
 
 func TestNewHandler_MissingName(t *testing.T) {
-	h := lambdah.APIGatewayHandler(newHandler())
+	h := lambdah.APIGatewayProxyHandler(newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
@@ -57,7 +57,7 @@ func TestNewHandler_MissingName(t *testing.T) {
 }
 
 func TestNewHandler_InvalidGreeting(t *testing.T) {
-	h := lambdah.APIGatewayHandler(newHandler())
+	h := lambdah.APIGatewayProxyHandler(newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
