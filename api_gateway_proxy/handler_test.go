@@ -1,4 +1,4 @@
-package lambdah
+package api_gateway_proxy
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestAPIGatewayProxyHandler_Success(t *testing.T) {
-	h := func(c *APIGatewayProxyContext) error {
+	h := func(c *Context) error {
 		var data requestData
 		err := c.Bind(&data)
 		if err != nil {
@@ -23,7 +23,7 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 		return c.JSON(http.StatusOK, responseData{Status: "all good"})
 	}
 
-	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{}, h)
+	awsHandler := Handler(HandlerConfig{}, h)
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -37,11 +37,11 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 }
 
 func TestAPIGatewayProxyHandler_DefaultErrorHandler(t *testing.T) {
-	h := func(c *APIGatewayProxyContext) error {
+	h := func(c *Context) error {
 		return errors.New("an error happened")
 	}
 
-	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{}, h)
+	awsHandler := Handler(HandlerConfig{}, h)
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -55,12 +55,12 @@ func TestAPIGatewayProxyHandler_DefaultErrorHandler(t *testing.T) {
 }
 
 func TestAPIGatewayProxyHandler_CustomErrorHandler(t *testing.T) {
-	h := func(c *APIGatewayProxyContext) error {
+	h := func(c *Context) error {
 		return errors.New("an error happened")
 	}
 
-	awsHandler := APIGatewayProxyHandler(APIGatewayProxyHandlerConfig{
-		ErrorHandler: func(c *APIGatewayProxyContext, err error) {
+	awsHandler := Handler(HandlerConfig{
+		ErrorHandler: func(c *Context, err error) {
 			type customError struct {
 				Error string `json:"error"`
 			}
@@ -80,7 +80,7 @@ func TestAPIGatewayProxyHandler_CustomErrorHandler(t *testing.T) {
 }
 
 func TestAPIGatewayProxyContext_Bind_Success(t *testing.T) {
-	c := &APIGatewayProxyContext{
+	c := &Context{
 		Request: events.APIGatewayProxyRequest{
 			Body: `{"message": "hello"}`,
 		},
@@ -94,7 +94,7 @@ func TestAPIGatewayProxyContext_Bind_Success(t *testing.T) {
 }
 
 func TestAPIGatewayProxyContext_Bind_InvalidJSON(t *testing.T) {
-	c := &APIGatewayProxyContext{
+	c := &Context{
 		Request: events.APIGatewayProxyRequest{
 			Body: `{"messag`,
 		},
@@ -107,7 +107,7 @@ func TestAPIGatewayProxyContext_Bind_InvalidJSON(t *testing.T) {
 }
 
 func TestAPIGatewayProxyContext_Bind_WithValidationError(t *testing.T) {
-	c := &APIGatewayProxyContext{
+	c := &Context{
 		Request: events.APIGatewayProxyRequest{
 			Body: `{}`,
 		},
@@ -121,7 +121,7 @@ func TestAPIGatewayProxyContext_Bind_WithValidationError(t *testing.T) {
 }
 
 func TestAPIGatewayProxyContext_JSON_WithBody(t *testing.T) {
-	c := &APIGatewayProxyContext{}
+	c := &Context{}
 
 	err := c.JSON(http.StatusOK, responseData{Status: "all good"})
 
@@ -131,7 +131,7 @@ func TestAPIGatewayProxyContext_JSON_WithBody(t *testing.T) {
 }
 
 func TestAPIGatewayProxyContext_JSON_WithoutBody(t *testing.T) {
-	c := &APIGatewayProxyContext{}
+	c := &Context{}
 
 	err := c.JSON(http.StatusNoContent, nil)
 
@@ -141,18 +141,18 @@ func TestAPIGatewayProxyContext_JSON_WithoutBody(t *testing.T) {
 }
 
 func TestDefaultAPIGatewayProxyErrorHandler_UnhandledError(t *testing.T) {
-	c := &APIGatewayProxyContext{}
+	c := &Context{}
 
-	defaultAPIGatewayProxyErrorHandler(c, errors.New("some error"))
+	defaultErrorHandler(c, errors.New("some error"))
 
 	assert.Equal(t, 500, c.Response.StatusCode)
 	assert.Equal(t, `{"message":"Internal server error"}`, c.Response.Body)
 }
 
 func TestDefaultAPIGatewayProxyErrorHandler_APIGatewayProxyError(t *testing.T) {
-	c := &APIGatewayProxyContext{}
+	c := &Context{}
 
-	defaultAPIGatewayProxyErrorHandler(c, APIGatewayProxyError{
+	defaultErrorHandler(c, Error{
 		StatusCode: 400,
 		Message:    "Bad request",
 	})

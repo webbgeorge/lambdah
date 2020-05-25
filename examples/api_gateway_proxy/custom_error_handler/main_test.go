@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/webbgeorge/lambdah"
+	"github.com/webbgeorge/lambdah/api_gateway_proxy"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHandler_UnhandledError(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(
-		lambdah.APIGatewayProxyHandlerConfig{
+	h := api_gateway_proxy.Handler(
+		api_gateway_proxy.HandlerConfig{
 			ErrorHandler: customErrorHandler,
 		},
 		newHttpHandler(),
@@ -25,8 +25,8 @@ func TestNewHandler_UnhandledError(t *testing.T) {
 }
 
 func TestNewHandler_CustomErrorType(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(
-		lambdah.APIGatewayProxyHandlerConfig{
+	h := api_gateway_proxy.Handler(
+		api_gateway_proxy.HandlerConfig{
 			ErrorHandler: customErrorHandler,
 		},
 		newHttpHandler(),

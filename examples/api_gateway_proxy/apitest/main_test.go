@@ -4,17 +4,22 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/webbgeorge/lambdah"
+	"github.com/webbgeorge/lambdah/api_gateway_proxy"
 
 	"github.com/steinfletcher/apitest"
 	"github.com/steinfletcher/apitest-jsonpath"
 )
 
 func TestNewHandler_Success(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHttpHandler())
+	httpHandler := api_gateway_proxy.ToHttpHandler(
+		api_gateway_proxy.HandlerConfig{},
+		newHttpHandler(),
+		"/animal",
+		nil,
+	)
 
 	apitest.New().
-		Handler(lambdah.HttpHandlerFromAWSAPIGatewayProxyHandler(h, "/animal", nil)).
+		Handler(httpHandler).
 		Get("/animal").
 		Expect(t).
 		Status(http.StatusOK).
@@ -23,10 +28,15 @@ func TestNewHandler_Success(t *testing.T) {
 }
 
 func TestNewHandler_WithError(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHttpHandler())
+	httpHandler := api_gateway_proxy.ToHttpHandler(
+		api_gateway_proxy.HandlerConfig{},
+		newHttpHandler(),
+		"/animal",
+		nil,
+	)
 
 	apitest.New().
-		Handler(lambdah.HttpHandlerFromAWSAPIGatewayProxyHandler(h, "/animal", nil)).
+		Handler(httpHandler).
 		Get("/animal").
 		Header("Error", "true").
 		Expect(t).

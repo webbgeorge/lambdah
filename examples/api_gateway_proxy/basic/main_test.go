@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/webbgeorge/lambdah"
+	"github.com/webbgeorge/lambdah/api_gateway_proxy"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHandler_Success(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
+	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
@@ -26,7 +26,7 @@ func TestNewHandler_Success(t *testing.T) {
 }
 
 func TestNewHandler_MissingName(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
+	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
@@ -40,7 +40,7 @@ func TestNewHandler_MissingName(t *testing.T) {
 }
 
 func TestNewHandler_InvalidGreeting(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
+	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{
@@ -54,7 +54,7 @@ func TestNewHandler_InvalidGreeting(t *testing.T) {
 }
 
 func TestNewHandler_DaveIsNotWelcome(t *testing.T) {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
+	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
 
 	res, err := h(context.Background(), events.APIGatewayProxyRequest{
 		Body: `{

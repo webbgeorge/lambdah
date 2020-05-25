@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/webbgeorge/lambdah"
+	"github.com/webbgeorge/lambdah/api_gateway_proxy"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
-	h := lambdah.APIGatewayProxyHandler(
-		lambdah.APIGatewayProxyHandlerConfig{
+	h := api_gateway_proxy.Handler(
+		api_gateway_proxy.HandlerConfig{
 			ErrorHandler: customErrorHandler,
 		},
 		newHttpHandler(),
@@ -19,8 +19,8 @@ func main() {
 	lambda.Start(h)
 }
 
-func newHttpHandler() lambdah.APIGatewayProxyHandlerFunc {
-	return func(c *lambdah.APIGatewayProxyContext) error {
+func newHttpHandler() api_gateway_proxy.HandlerFunc {
+	return func(c *api_gateway_proxy.Context) error {
 		if c.Request.Headers["Custom-Error"] == "true" {
 			return customError{
 				StatusCode:   400,
@@ -40,7 +40,7 @@ func (err customError) Error() string {
 	return err.ErrorMessage
 }
 
-func customErrorHandler(c *lambdah.APIGatewayProxyContext, err error) {
+func customErrorHandler(c *api_gateway_proxy.Context, err error) {
 	var customErr customError
 	switch err := err.(type) {
 	case customError:

@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/webbgeorge/lambdah"
+	"github.com/webbgeorge/lambdah/api_gateway_proxy"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
-	h := lambdah.APIGatewayProxyHandler(lambdah.APIGatewayProxyHandlerConfig{}, newHandler())
+	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
 	lambda.Start(h)
 }
 
-func newHandler() lambdah.APIGatewayProxyHandlerFunc {
-	return func(c *lambdah.APIGatewayProxyContext) error {
+func newHandler() api_gateway_proxy.HandlerFunc {
+	return func(c *api_gateway_proxy.Context) error {
 		var data requestData
 		err := c.Bind(&data)
 		if err != nil {
@@ -23,7 +23,7 @@ func newHandler() lambdah.APIGatewayProxyHandlerFunc {
 		}
 
 		if data.Name == "Dave" {
-			return lambdah.APIGatewayProxyError{
+			return api_gateway_proxy.Error{
 				StatusCode: http.StatusNotAcceptable,
 				Message:    "Dave is not welcome here!",
 			}
@@ -42,13 +42,13 @@ type requestData struct {
 
 func (d *requestData) Validate() error {
 	if d.Greeting != "Hi" && d.Greeting != "Hello" {
-		return lambdah.APIGatewayProxyError{
+		return api_gateway_proxy.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Greeting not allowed",
 		}
 	}
 	if d.Name == "" {
-		return lambdah.APIGatewayProxyError{
+		return api_gateway_proxy.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Name is required",
 		}
