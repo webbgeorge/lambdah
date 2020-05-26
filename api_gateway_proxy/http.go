@@ -21,6 +21,7 @@ import (
 func ToHttpHandler(
 	handlerConfig HandlerConfig,
 	h HandlerFunc,
+	middleware []Middleware,
 	resourcePathPattern string,
 	stageVariables map[string]string,
 ) http.Handler {
@@ -30,7 +31,7 @@ func ToHttpHandler(
 			panic(err)
 		}
 
-		awsHandler := Handler(handlerConfig, h)
+		awsHandler := Handler(handlerConfig, h, middleware...)
 
 		proxyResponse, err := awsHandler(r.Context(), events.APIGatewayProxyRequest{
 			Resource:                        resourcePathPattern,

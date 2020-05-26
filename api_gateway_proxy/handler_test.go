@@ -79,6 +79,43 @@ func TestAPIGatewayProxyHandler_CustomErrorHandler(t *testing.T) {
 	assert.Equal(t, `{"error":"an error happened"}`, res.Body)
 }
 
+func TestAPIGatewayProxyHandler_Middleware(t *testing.T) {
+	callOrder := make([]string, 0)
+
+	h := func(c *Context) error {
+		callOrder = append(callOrder, "handler")
+		return c.JSON(http.StatusOK, responseData{Status: c.Request.Headers["Test"]})
+	}
+
+	mw1 := func(h HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			callOrder = append(callOrder, "mw1 in")
+			err := h(c)
+			callOrder = append(callOrder, "mw1 out")
+			return err
+		}
+	}
+
+	mw2 := func(h HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			callOrder = append(callOrder, "mw2 in")
+			err := h(c)
+			callOrder = append(callOrder, "mw2 out")
+			return err
+		}
+	}
+
+	awsHandler := Handler(HandlerConfig{}, h, mw1, mw2)
+	res, err := awsHandler(
+		context.Background(),
+		events.APIGatewayProxyRequest{},
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, []string{"mw1 in", "mw2 in", "handler", "mw2 out", "mw1 out"}, callOrder)
+}
+
 func TestAPIGatewayProxyContext_Bind_Success(t *testing.T) {
 	c := &Context{
 		Request: events.APIGatewayProxyRequest{

@@ -17,7 +17,7 @@ type HandlerConfig struct {
 	ErrorHandler ErrorHandler
 }
 
-func Handler(conf HandlerConfig, h HandlerFunc) func(
+func Handler(conf HandlerConfig, h HandlerFunc, middleware ...Middleware) func(
 	ctx context.Context,
 	request events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
@@ -28,6 +28,11 @@ func Handler(conf HandlerConfig, h HandlerFunc) func(
 		c := &Context{
 			Context: ctx,
 			Request: request,
+		}
+
+		// apply middleware in reverse order
+		for i := len(middleware) - 1; i >= 0; i-- {
+			h = middleware[i](h)
 		}
 
 		err := h(c)

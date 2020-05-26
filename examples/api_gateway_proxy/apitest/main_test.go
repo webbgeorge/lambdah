@@ -14,6 +14,7 @@ func TestNewHandler_Success(t *testing.T) {
 	httpHandler := api_gateway_proxy.ToHttpHandler(
 		api_gateway_proxy.HandlerConfig{},
 		newHttpHandler(),
+		nil,
 		"/animal",
 		nil,
 	)
@@ -31,6 +32,7 @@ func TestNewHandler_WithError(t *testing.T) {
 	httpHandler := api_gateway_proxy.ToHttpHandler(
 		api_gateway_proxy.HandlerConfig{},
 		newHttpHandler(),
+		nil,
 		"/animal",
 		nil,
 	)
