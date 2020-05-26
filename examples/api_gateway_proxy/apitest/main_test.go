@@ -4,43 +4,44 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/webbgeorge/lambdah/api_gateway_proxy"
-
 	"github.com/steinfletcher/apitest"
 	"github.com/steinfletcher/apitest-jsonpath"
 )
 
 func TestNewHandler_Success(t *testing.T) {
-	httpHandler := api_gateway_proxy.ToHttpHandler(
-		api_gateway_proxy.HandlerConfig{},
-		newHttpHandler(),
-		nil,
-		"/animal",
-		nil,
-	)
+	httpHandler := newHandler().
+		ToHttpHandler("/animal/{name}", nil)
 
 	apitest.New().
 		Handler(httpHandler).
-		Get("/animal").
+		Get("/animal/giraffe").
 		Expect(t).
 		Status(http.StatusOK).
 		Assert(jsonpath.Equal(`$.animal`, "Giraffe")).
+		Assert(jsonpath.Equal(`$.trait`, "tall")).
 		End()
 }
 
-func TestNewHandler_WithError(t *testing.T) {
-	httpHandler := api_gateway_proxy.ToHttpHandler(
-		api_gateway_proxy.HandlerConfig{},
-		newHttpHandler(),
-		nil,
-		"/animal",
-		nil,
-	)
+func TestNewHandler_UnhandledAnimalError(t *testing.T) {
+	httpHandler := newHandler().
+		ToHttpHandler("/animal/{name}", nil)
 
 	apitest.New().
 		Handler(httpHandler).
-		Get("/animal").
-		Header("Error", "true").
+		Get("/animal/elephant").
+		Expect(t).
+		Status(http.StatusBadRequest).
+		Assert(jsonpath.Equal(`$.message`, "Animal not found")).
+		End()
+}
+
+func TestNewHandler_CatCausesUnhandledError(t *testing.T) {
+	httpHandler := newHandler().
+		ToHttpHandler("/animal/{name}", nil)
+
+	apitest.New().
+		Handler(httpHandler).
+		Get("/animal/cat").
 		Expect(t).
 		Status(http.StatusInternalServerError).
 		Assert(jsonpath.Equal(`$.message`, "Internal server error")).

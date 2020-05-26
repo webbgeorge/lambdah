@@ -23,7 +23,7 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 		return c.JSON(http.StatusOK, responseData{Status: "all good"})
 	}
 
-	awsHandler := Handler(HandlerConfig{}, h)
+	awsHandler := HandlerFunc(h).ToLambdaHandler()
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -36,12 +36,30 @@ func TestAPIGatewayProxyHandler_Success(t *testing.T) {
 	assert.Equal(t, `{"status":"all good"}`, res.Body)
 }
 
+func TestAPIGatewayProxyHandler_NoErrorHandler(t *testing.T) {
+	h := func(c *Context) error {
+		return errors.New("an error happened")
+	}
+
+	awsHandler := HandlerFunc(h).ToLambdaHandler()
+	res, err := awsHandler(
+		context.Background(),
+		events.APIGatewayProxyRequest{
+			Body: `{"message": "hello"}`,
+		},
+	)
+
+	assert.Nil(t, err)
+	assert.Equal(t, 500, res.StatusCode)
+	assert.Equal(t, `Internal server error`, res.Body)
+}
+
 func TestAPIGatewayProxyHandler_DefaultErrorHandler(t *testing.T) {
 	h := func(c *Context) error {
 		return errors.New("an error happened")
 	}
 
-	awsHandler := Handler(HandlerConfig{}, h)
+	awsHandler := HandlerFunc(h).Middleware(ErrorHandlerMiddleware()).ToLambdaHandler()
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -59,14 +77,21 @@ func TestAPIGatewayProxyHandler_CustomErrorHandler(t *testing.T) {
 		return errors.New("an error happened")
 	}
 
-	awsHandler := Handler(HandlerConfig{
-		ErrorHandler: func(c *Context, err error) {
-			type customError struct {
-				Error string `json:"error"`
+	customErrorHandlerMiddleware := func(h HandlerFunc) HandlerFunc {
+		return func(c *Context) error {
+			err := h(c)
+			if err != nil {
+				type customError struct {
+					Error string `json:"error"`
+				}
+				_ = c.JSON(http.StatusBadRequest, customError{Error: err.Error()})
 			}
-			_ = c.JSON(http.StatusBadRequest, customError{Error: err.Error()})
-		},
-	}, h)
+			return nil
+		}
+	}
+
+	awsHandler := HandlerFunc(h).Middleware(customErrorHandlerMiddleware).ToLambdaHandler()
+
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{
@@ -105,7 +130,7 @@ func TestAPIGatewayProxyHandler_Middleware(t *testing.T) {
 		}
 	}
 
-	awsHandler := Handler(HandlerConfig{}, h, mw1, mw2)
+	awsHandler := HandlerFunc(h).Middleware(mw1, mw2).ToLambdaHandler()
 	res, err := awsHandler(
 		context.Background(),
 		events.APIGatewayProxyRequest{},
@@ -175,27 +200,6 @@ func TestAPIGatewayProxyContext_JSON_WithoutBody(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 204, c.Response.StatusCode)
 	assert.Equal(t, ``, c.Response.Body)
-}
-
-func TestDefaultAPIGatewayProxyErrorHandler_UnhandledError(t *testing.T) {
-	c := &Context{}
-
-	defaultErrorHandler(c, errors.New("some error"))
-
-	assert.Equal(t, 500, c.Response.StatusCode)
-	assert.Equal(t, `{"message":"Internal server error"}`, c.Response.Body)
-}
-
-func TestDefaultAPIGatewayProxyErrorHandler_APIGatewayProxyError(t *testing.T) {
-	c := &Context{}
-
-	defaultErrorHandler(c, Error{
-		StatusCode: 400,
-		Message:    "Bad request",
-	})
-
-	assert.Equal(t, 400, c.Response.StatusCode)
-	assert.Equal(t, `{"message":"Bad request"}`, c.Response.Body)
 }
 
 type requestData struct {

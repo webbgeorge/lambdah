@@ -1,11 +1,72 @@
 package api_gateway_proxy
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestErrorHandlerMiddleware_NoError(t *testing.T) {
+	c := &Context{}
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		return c.JSON(http.StatusOK, responseData{Status: "all good"})
+	}
+
+	mw := ErrorHandlerMiddleware()
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+	assert.Equal(t, c.Response.StatusCode, 200)
+	assert.Equal(t, c.Response.Headers["Content-Type"], "application/json")
+	assert.Equal(t, c.Response.Body, `{"status":"all good"}`)
+}
+
+func TestErrorHandlerMiddleware_UnhandledError(t *testing.T) {
+	c := &Context{}
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		return assert.AnError
+	}
+
+	mw := ErrorHandlerMiddleware()
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+	assert.Equal(t, c.Response.StatusCode, 500)
+	assert.Equal(t, c.Response.Headers["Content-Type"], "application/json")
+	assert.Equal(t, c.Response.Body, `{"message":"Internal server error"}`)
+}
+
+func TestErrorHandlerMiddleware_CustomError(t *testing.T) {
+	c := &Context{}
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		return Error{
+			StatusCode: 400,
+			Message:    "Bad request",
+		}
+	}
+
+	mw := ErrorHandlerMiddleware()
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+	assert.Equal(t, c.Response.StatusCode, 400)
+	assert.Equal(t, c.Response.Headers["Content-Type"], "application/json")
+	assert.Equal(t, c.Response.Body, `{"message":"Bad request"}`)
+}
 
 func TestCorrelationIDMiddleware_CorrelationIDProvidedInRequest(t *testing.T) {
 	c := &Context{

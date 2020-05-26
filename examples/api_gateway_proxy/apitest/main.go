@@ -4,24 +4,38 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/webbgeorge/lambdah/api_gateway_proxy"
-
-	"github.com/aws/aws-lambda-go/lambda"
+	lambdah "github.com/webbgeorge/lambdah/api_gateway_proxy"
 )
 
 func main() {
-	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHttpHandler())
-	lambda.Start(h)
+	newHandler().Start()
 }
 
-func newHttpHandler() api_gateway_proxy.HandlerFunc {
-	return func(c *api_gateway_proxy.Context) error {
-		if c.Request.Headers["Error"] == "true" {
-			return errors.New("some error")
+func newHandler() lambdah.HandlerFunc {
+	return lambdah.HandlerFunc(func(c *lambdah.Context) error {
+		switch c.Request.PathParameters["name"] {
+		case "giraffe":
+			return c.JSON(http.StatusOK, responseData{
+				Animal: "Giraffe",
+				Trait:  "tall",
+			})
+		case "mouse":
+			return c.JSON(http.StatusOK, responseData{
+				Animal: "Mouse",
+				Trait:  "small",
+			})
+		case "cat":
+			return errors.New("cat causes 500")
+		default:
+			return lambdah.Error{
+				StatusCode: 400,
+				Message:    "Animal not found",
+			}
 		}
-		type responseData struct {
-			Animal string `json:"animal"`
-		}
-		return c.JSON(http.StatusOK, responseData{Animal: "Giraffe"})
-	}
+	}).Middleware(lambdah.ErrorHandlerMiddleware())
+}
+
+type responseData struct {
+	Animal string `json:"animal"`
+	Trait  string `json:"trait"`
 }

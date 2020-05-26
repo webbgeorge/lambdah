@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/webbgeorge/lambdah/api_gateway_proxy"
-
-	"github.com/aws/aws-lambda-go/lambda"
+	lambdah "github.com/webbgeorge/lambdah/api_gateway_proxy"
 )
 
 func main() {
-	h := api_gateway_proxy.Handler(api_gateway_proxy.HandlerConfig{}, newHandler())
-	lambda.Start(h)
+	newHandler().Start()
 }
 
-func newHandler() api_gateway_proxy.HandlerFunc {
-	return func(c *api_gateway_proxy.Context) error {
+func newHandler() lambdah.HandlerFunc {
+	return lambdah.HandlerFunc(func(c *lambdah.Context) error {
 		var data requestData
 		err := c.Bind(&data)
 		if err != nil {
@@ -23,7 +20,7 @@ func newHandler() api_gateway_proxy.HandlerFunc {
 		}
 
 		if data.Name == "Dave" {
-			return api_gateway_proxy.Error{
+			return lambdah.Error{
 				StatusCode: http.StatusNotAcceptable,
 				Message:    "Dave is not welcome here!",
 			}
@@ -32,7 +29,7 @@ func newHandler() api_gateway_proxy.HandlerFunc {
 		message := fmt.Sprintf("%s %s", data.Greeting, data.Name)
 
 		return c.JSON(http.StatusOK, responseData{Message: message})
-	}
+	}).Middleware(lambdah.ErrorHandlerMiddleware())
 }
 
 type requestData struct {
@@ -42,13 +39,13 @@ type requestData struct {
 
 func (d *requestData) Validate() error {
 	if d.Greeting != "Hi" && d.Greeting != "Hello" {
-		return api_gateway_proxy.Error{
+		return lambdah.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Greeting not allowed",
 		}
 	}
 	if d.Name == "" {
-		return api_gateway_proxy.Error{
+		return lambdah.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Name is required",
 		}
