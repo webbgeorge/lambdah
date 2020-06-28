@@ -1,6 +1,8 @@
 package api_gateway_proxy
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -108,4 +110,39 @@ func TestCorrelationIDMiddleware_CorrelationIDNotProvidedInRequest(t *testing.T)
 
 	assert.Nil(t, err)
 	assert.True(t, handlerCalled)
+}
+
+func TestLoggerMiddleware(t *testing.T) {
+	c := &Context{Request: events.APIGatewayProxyRequest{
+		HTTPMethod: "PUT",
+		Path:       "/path/123",
+		RequestContext: events.APIGatewayProxyRequestContext{
+			ResourcePath: "/path/{pathID}",
+		},
+	}}
+	c.Context = log.WithCorrelationID(c.Context, log.NewCorrelationID())
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		return c.JSON(http.StatusOK, nil)
+	}
+	buf := &bytes.Buffer{}
+
+	mw := LoggerMiddleware(buf, map[string]string{"one": "val1", "two": "val2"})
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+
+	var line map[string]interface{}
+	err = json.Unmarshal(buf.Bytes(), &line)
+	assert.Nil(t, err)
+	assert.Equal(t, "info", line["level"])
+	assert.Equal(t, "PUT", line["req_method"])
+	assert.Equal(t, "/path/123", line["req_path"])
+	assert.Equal(t, "/path/{pathID}", line["req_route"])
+	assert.NotEmpty(t, line["correlation_id"])
+	assert.Equal(t, float64(200), line["res_status"])
+	assert.Equal(t, "Response with status code 200", line["message"])
 }

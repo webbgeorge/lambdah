@@ -27,7 +27,7 @@ func LoggerFromContext(c context.Context) *zerolog.Logger {
 func NewLogger(w io.Writer, fields map[string]string) *zerolog.Logger {
 	lc := zerolog.New(w).With().Timestamp()
 	for field, value := range fields {
-		lc.Str(field, value)
+		lc = lc.Str(field, value)
 	}
 	logger := lc.Logger()
 	return &logger
