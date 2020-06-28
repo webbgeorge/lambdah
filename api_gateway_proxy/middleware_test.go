@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/webbgeorge/lambdah/log"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
 )
@@ -96,8 +98,7 @@ func TestCorrelationIDMiddleware_CorrelationIDNotProvidedInRequest(t *testing.T)
 	handlerCalled := false
 	h := func(c *Context) error {
 		handlerCalled = true
-		assert.NotEmpty(t, c.Request.Headers["Correlation-Id"])
-		assert.NotEmpty(t, c.Request.MultiValueHeaders["Correlation-Id"][0])
+		assert.NotEmpty(t, log.CorrelationIDFromContext(c.Context))
 		return nil
 	}
 
