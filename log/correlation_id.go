@@ -16,7 +16,11 @@ func CorrelationIDFromContext(c context.Context) string {
 	if c == nil {
 		return ""
 	}
-	return c.Value(correlationIDContextKey{}).(string)
+	id, ok := c.Value(correlationIDContextKey{}).(string)
+	if !ok {
+		return ""
+	}
+	return id
 }
 
 func NewCorrelationID() string {

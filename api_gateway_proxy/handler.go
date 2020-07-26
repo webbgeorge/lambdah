@@ -11,8 +11,6 @@ import (
 	"github.com/gorilla/reverse"
 )
 
-// TODO: logging?
-
 type Context struct {
 	Context  context.Context
 	Request  events.APIGatewayProxyRequest
@@ -53,10 +51,8 @@ func (c *Context) JSON(statusCode int, body interface{}) error {
 	return nil
 }
 
-// Lambdah API Gateway Proxy handler function
 type HandlerFunc func(c *Context) error
 
-// Starts the lambda function.
 func (hf HandlerFunc) Start() {
 	lambda.Start(hf.ToLambdaHandler())
 }

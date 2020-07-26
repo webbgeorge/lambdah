@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/steinfletcher/apitest"
+	jsonpath "github.com/steinfletcher/apitest-jsonpath"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -200,6 +202,44 @@ func TestAPIGatewayProxyContext_JSON_WithoutBody(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 204, c.Response.StatusCode)
 	assert.Equal(t, ``, c.Response.Body)
+}
+
+// test HTTP handler function using steinfletcher/apitest
+func TestHandlerFunc_ToHttpHandler(t *testing.T) {
+	h := func(c *Context) error {
+		var data struct {
+			Age int
+		}
+		err := c.Bind(&data)
+		if err != nil {
+			return err
+		}
+
+		assert.Equal(t, 12, data.Age)
+		assert.Equal(t, "dog", c.Request.PathParameters["name"])
+		assert.Len(t, c.Request.MultiValueHeaders["Multi-Header"], 2)
+		assert.Equal(t, "val1", c.Request.Headers["Multi-Header"])
+
+		c.Response.MultiValueHeaders = map[string][]string{
+			"Test-Header": {"valueOne", "valueTwo"},
+		}
+		return c.JSON(http.StatusOK, responseData{Status: "all good"})
+	}
+
+	httpHandler := HandlerFunc(h).
+		ToHttpHandler("/animal/{name}", nil)
+
+	apitest.New().
+		Handler(httpHandler).
+		Put("/animal/dog").
+		Header("Multi-Header", "val1").
+		Header("Multi-Header", "val2").
+		Body(`{"age": 12}`).
+		Expect(t).
+		Status(http.StatusOK).
+		Assert(jsonpath.Equal(`$.status`, "all good")).
+		HeaderPresent("Test-Header").
+		End()
 }
 
 type requestData struct {

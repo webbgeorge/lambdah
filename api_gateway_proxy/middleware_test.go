@@ -2,6 +2,7 @@ package api_gateway_proxy
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -48,6 +49,28 @@ func TestErrorHandlerMiddleware_UnhandledError(t *testing.T) {
 	assert.Equal(t, c.Response.StatusCode, 500)
 	assert.Equal(t, c.Response.Headers["Content-Type"], "application/json")
 	assert.Equal(t, c.Response.Body, `{"message":"Internal server error"}`)
+}
+
+func TestErrorHandlerMiddleware_ErrorWithLogger(t *testing.T) {
+	logBuffer := &bytes.Buffer{}
+	goCtx := log.WithLogger(context.Background(), log.NewLogger(logBuffer, nil))
+	c := &Context{Context: goCtx}
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		return assert.AnError
+	}
+
+	mw := ErrorHandlerMiddleware()
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+	assert.Equal(t, c.Response.StatusCode, 500)
+	assert.Equal(t, c.Response.Headers["Content-Type"], "application/json")
+	assert.Equal(t, c.Response.Body, `{"message":"Internal server error"}`)
+	assert.Contains(t, logBuffer.String(), "Error: status: 500, message: Internal server error")
 }
 
 func TestErrorHandlerMiddleware_CustomError(t *testing.T) {
