@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/webbgeorge/lambdah"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/gorilla/reverse"
@@ -17,17 +19,13 @@ type Context struct {
 	Response events.APIGatewayProxyResponse
 }
 
-type Validatable interface {
-	Validate() error
-}
-
 func (c *Context) Bind(v interface{}) error {
 	err := json.Unmarshal([]byte(c.Request.Body), v)
 	if err != nil {
 		return err
 	}
 
-	if validatable, ok := v.(Validatable); ok {
+	if validatable, ok := v.(lambdah.Validatable); ok {
 		return validatable.Validate()
 	}
 

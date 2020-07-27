@@ -1,4 +1,4 @@
-package s3
+package sns
 
 import (
 	"io"
@@ -37,19 +37,17 @@ func CorrelationIDMiddleware() Middleware {
 func LoggerMiddleware(w io.Writer, fields map[string]string) Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			fields["handler_type"] = "s3"
+			fields["handler_type"] = "sns"
 			fields["correlation_id"] = log.CorrelationIDFromContext(c.Context)
-			fields["event_name"] = c.EventRecord.EventName
-			fields["bucket_name"] = c.EventRecord.S3.Bucket.Name
-			fields["object_key"] = c.EventRecord.S3.Object.Key
+			fields["topic_arn"] = c.EventRecord.SNS.TopicArn
 
 			logger := log.NewLogger(w, fields)
 			c.Context = log.WithLogger(c.Context, logger)
-			logger.Info().Msgf("Processing S3 event '%s'", c.EventRecord.EventName)
+			logger.Info().Msgf("Processing SNS event for topic '%s'", c.EventRecord.SNS.TopicArn)
 			err := h(c)
 			if err != nil {
 				logger.Error().
-					Msgf("Error processing S3 event: %s", err.Error())
+					Msgf("Error processing SNS event: %s", err.Error())
 			}
 			return err
 		}
