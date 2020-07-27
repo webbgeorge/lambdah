@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCorrelationIDMiddleware(t *testing.T) {
+func TestCorrelationIDMiddleware_NoIdProvided(t *testing.T) {
 	c := &Context{
 		Context: context.Background(),
 		EventRecord: events.SNSEventRecord{
@@ -26,6 +26,35 @@ func TestCorrelationIDMiddleware(t *testing.T) {
 		handlerCalled = true
 		assert.Equal(t, "sns:test:topic", c.EventRecord.SNS.TopicArn)
 		assert.Len(t, log.CorrelationIDFromContext(c.Context), 36)
+		return nil
+	}
+
+	mw := CorrelationIDMiddleware()
+	h = mw(h)
+	err := h(c)
+
+	assert.Nil(t, err)
+	assert.True(t, handlerCalled)
+}
+
+func TestCorrelationIDMiddleware_IdProvided(t *testing.T) {
+	c := &Context{
+		Context: context.Background(),
+		EventRecord: events.SNSEventRecord{
+			SNS: events.SNSEntity{
+				TopicArn: "sns:test:topic",
+				Message:  "test message",
+				MessageAttributes: map[string]interface{}{
+					"correlation_id": "test-correlation-id",
+				},
+			},
+		},
+	}
+	handlerCalled := false
+	h := func(c *Context) error {
+		handlerCalled = true
+		assert.Equal(t, "sns:test:topic", c.EventRecord.SNS.TopicArn)
+		assert.Equal(t, "test-correlation-id", log.CorrelationIDFromContext(c.Context))
 		return nil
 	}
 

@@ -8,18 +8,25 @@ import (
 
 type Middleware func(h HandlerFunc) HandlerFunc
 
-// Middleware to attach a correlation ID to the event, useful for tracing
+// Middleware to get or attach a correlation ID to the event, useful for tracing
 // requests through distributed systems if it is passed along in further requests.
 // You can also access the correlation ID directly in your handlers and
 // middlewares by calling log.CorrelationIDFromContext(c.Context).
+//
+// First looks for a Correlation ID provided in the SNS message attribute `correlation_id`.
+// If not present a new correlation ID will be created.
 //
 // If used with the LoggerMiddleware, Correlation IDs are logged in each message.
 // To ensure logs have correlation ID field, this middleware should be called first.
 func CorrelationIDMiddleware() Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			// TODO: from metadata
-			c.Context = log.WithCorrelationID(c.Context, log.NewCorrelationID())
+			cid, ok := c.EventRecord.SNS.MessageAttributes["correlation_id"].(string)
+			if cid == "" || !ok {
+				cid = log.NewCorrelationID()
+			}
+
+			c.Context = log.WithCorrelationID(c.Context, cid)
 			return h(c)
 		}
 	}

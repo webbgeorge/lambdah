@@ -18,7 +18,7 @@ type Middleware func(h HandlerFunc) HandlerFunc
 func CorrelationIDMiddleware() Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			// TODO: from metadata
+			// TODO: implement correlation IDs from metadata when AWS Lambda event includes them
 			c.Context = log.WithCorrelationID(c.Context, log.NewCorrelationID())
 			return h(c)
 		}
