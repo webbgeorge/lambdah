@@ -105,6 +105,7 @@ func CorrelationIDMiddleware() Middleware {
 func LoggerMiddleware(w io.Writer, fields map[string]string) Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
+			fields["handler_type"] = "api_gateway_proxy"
 			fields["correlation_id"] = log.CorrelationIDFromContext(c.Context)
 			fields["req_method"] = c.Request.HTTPMethod
 			fields["req_path"] = c.Request.Path
