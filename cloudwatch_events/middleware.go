@@ -1,4 +1,4 @@
-package dynamodb
+package cloudwatch_events
 
 import (
 	"io"
@@ -8,18 +8,25 @@ import (
 
 type Middleware func(h HandlerFunc) HandlerFunc
 
-// Middleware to attach a correlation ID to the event, useful for tracing
+// Middleware to get or attach a correlation ID to the event, useful for tracing
 // requests through distributed systems if it is passed along in further requests.
 // You can also access the correlation ID directly in your handlers and
 // middlewares by calling log.CorrelationIDFromContext(c.Context).
+//
+// Uses the CloudWatch Event ID as the Correlation ID. If for some reason this
+// is not present, a new correlation ID will be created.
 //
 // If used with the LoggerMiddleware, Correlation IDs are logged in each message.
 // To ensure logs have correlation ID field, this middleware should be called first.
 func CorrelationIDMiddleware() Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			// TODO: review correlation ID input
-			c.Context = log.WithCorrelationID(c.Context, log.NewCorrelationID())
+			// use the CloudWatch event as the Correlation ID
+			cid := c.Event.ID
+			if cid == "" {
+				cid = log.NewCorrelationID()
+			}
+			c.Context = log.WithCorrelationID(c.Context, cid)
 			return h(c)
 		}
 	}
@@ -37,19 +44,17 @@ func CorrelationIDMiddleware() Middleware {
 func LoggerMiddleware(w io.Writer, fields map[string]string) Middleware {
 	return func(h HandlerFunc) HandlerFunc {
 		return func(c *Context) error {
-			fields["handler_type"] = "dynamodb"
+			fields["handler_type"] = "cloudwatch_events"
 			fields["correlation_id"] = log.CorrelationIDFromContext(c.Context)
-			fields["event_name"] = c.EventRecord.EventName
-			fields["table_arn"] = c.EventRecord.EventSourceArn
+			fields["detail_type"] = c.Event.DetailType
 
 			logger := log.NewLogger(w, fields)
 			c.Context = log.WithLogger(c.Context, logger)
-			logger.Info().Msgf("Processing DynamoDB event '%s'", c.EventRecord.EventName)
+			logger.Info().Msgf("Processing CloudWatch event of type '%s'", c.Event.DetailType)
 			err := h(c)
 			if err != nil {
-				// combine error and info log into 1 log line
 				logger.Error().
-					Msgf("Error processing DynamoDB event: %s", err.Error())
+					Msgf("Error processing CloudWatch event: %s", err.Error())
 			}
 			return err
 		}
