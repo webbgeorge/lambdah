@@ -92,7 +92,7 @@ func TestContext_UnmarshalKeys(t *testing.T) {
 	}
 
 	var d testData
-	err := c.UnmarshalKeys(&d)
+	err := c.BindKeys(&d)
 
 	assert.Nil(t, err)
 	assert.Equal(t, testData{
@@ -116,7 +116,7 @@ func TestContext_UnmarshalNewImage(t *testing.T) {
 	}
 
 	var d testData
-	err := c.UnmarshalNewImage(&d)
+	err := c.BindNewImage(&d)
 
 	assert.Nil(t, err)
 	assert.Equal(t, testData{
@@ -140,7 +140,7 @@ func TestContext_UnmarshalOldImage(t *testing.T) {
 	}
 
 	var d testData
-	err := c.UnmarshalOldImage(&d)
+	err := c.BindOldImage(&d)
 
 	assert.Nil(t, err)
 	assert.Equal(t, testData{

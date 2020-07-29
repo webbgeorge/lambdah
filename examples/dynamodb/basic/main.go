@@ -16,7 +16,7 @@ func main() {
 func newHandler(logger io.Writer) lambdah.HandlerFunc {
 	return func(c *lambdah.Context) error {
 		var d data
-		err := c.UnmarshalNewImage(&d)
+		err := c.BindNewImage(&d)
 		if err != nil {
 			return err
 		}

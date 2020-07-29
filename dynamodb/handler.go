@@ -15,15 +15,15 @@ type Context struct {
 	EventRecord events.DynamoDBEventRecord
 }
 
-func (c *Context) UnmarshalKeys(out interface{}) error {
+func (c *Context) BindKeys(out interface{}) error {
 	return unmarshalStreamImage(c.EventRecord.Change.Keys, out)
 }
 
-func (c *Context) UnmarshalNewImage(out interface{}) error {
+func (c *Context) BindNewImage(out interface{}) error {
 	return unmarshalStreamImage(c.EventRecord.Change.NewImage, out)
 }
 
-func (c *Context) UnmarshalOldImage(out interface{}) error {
+func (c *Context) BindOldImage(out interface{}) error {
 	return unmarshalStreamImage(c.EventRecord.Change.OldImage, out)
 }
 
