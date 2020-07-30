@@ -32,6 +32,12 @@ func (c *Context) Bind(v interface{}) error {
 	return nil
 }
 
+func (c *Context) String(statusCode int, str string) error {
+	c.Response.Body = str
+	c.Response.StatusCode = statusCode
+	return nil
+}
+
 func (c *Context) JSON(statusCode int, body interface{}) error {
 	if body != nil {
 		if c.Response.Headers == nil {

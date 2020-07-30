@@ -184,6 +184,16 @@ func TestAPIGatewayProxyContext_Bind_WithValidationError(t *testing.T) {
 	assert.Equal(t, "invalid message", err.Error())
 }
 
+func TestAPIGatewayProxyContext_String(t *testing.T) {
+	c := &Context{}
+
+	err := c.String(http.StatusOK, "all good")
+
+	assert.Nil(t, err)
+	assert.Equal(t, 200, c.Response.StatusCode)
+	assert.Equal(t, "all good", c.Response.Body)
+}
+
 func TestAPIGatewayProxyContext_JSON_WithBody(t *testing.T) {
 	c := &Context{}
 
