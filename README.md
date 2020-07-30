@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/webbgeorge/lambdah/badge.svg?branch=master)](https://coveralls.io/github/webbgeorge/lambdah?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webbgeorge/lambdah)](https://goreportcard.com/report/github.com/webbgeorge/lambdah)
 
-*lambdah* provides a useful abstraction layer over AWS Lambda functions written in Go.
+**lambdah** provides a useful abstraction layer over AWS Lambda functions written in Go.
 
 Features:
 
@@ -17,12 +17,12 @@ Features:
 
 ## Installation
 
-*lambdah* is available as a [Go module](https://github.com/golang/go/wiki/Modules) - import 
+**lambdah** is available as a [Go module](https://github.com/golang/go/wiki/Modules) - import
 any package under `github.com/webbgeorge/lambdah` in your project to get started.
 
 ## Getting started
 
-*lambdah* has handlers for many types of event. Here are two example handlers for API 
+**lambdah** has handlers for many types of event. Here are two example handlers for API
 Gateway Proxy Requests and SQS Messages.
 
 ### API Gateway Proxy request handler
@@ -89,22 +89,16 @@ Handler type      | Example
 api_gateway_proxy | [basic](examples/api_gateway_proxy/basic)
 api_gateway_proxy | [custom error handler](examples/api_gateway_proxy/custom_error_handler)
 api_gateway_proxy | [apitest](examples/api_gateway_proxy/apitest)
-                  | 
 cloudwatch_events | [basic](examples/cloudwatch_events/basic)
 cloudwatch_events | [middleware](examples/cloudwatch_events/middleware)
-                  | 
 dynamodb          | [basic](examples/dynamodb/basic)
 dynamodb          | [middleware](examples/dynamodb/middleware)
-                  | 
 generic           | [basic](examples/generic/basic)
 generic           | [middleware](examples/generic/middleware)
-                  | 
 s3                | [basic](examples/s3/basic)
 s3                | [middleware](examples/s3/middleware)
-                  | 
 sns               | [basic](examples/sns/basic)
 sns               | [middleware](examples/sns/middleware)
-                  | 
 sqs               | [basic](examples/sqs/basic)
 sqs               | [middleware](examples/sqs/middleware)
 
@@ -112,20 +106,20 @@ sqs               | [middleware](examples/sqs/middleware)
 
 ### Middleware
 
-lambdah provides a middleware system to allow extending the functionality of its handlers.
+**lambdah** provides a middleware system to allow extending the functionality of its handlers.
 Using middleware on any handler is completely optional.
 
-Each handler includes some default middleware that you can choose to use or not. This 
-includes a CorrelationID middleware and a Logger middleware for all handlers. Some 
-handlers have additional default middleware, such as the api_gateway_proxy ErrorHandler 
-middleware.
+Each handler includes some default middleware that you can choose to use or not. This
+includes a `CorrelationIDMiddleware` and a `LoggerMiddleware` for all handlers. Some
+handlers have additional default middleware, such as the
+`api_gateway_proxy.ErrorHandlerMiddleware` middleware.
 
-In addition to default middleware, custom middleware can be created using a simple API, 
+In addition to default middleware, custom middleware can be created using a simple API,
 described below.
 
 #### Using middleware
 
-Here is the same simple API Gateway Proxy handler from above, with the addition 
+Here is the same simple API Gateway Proxy handler from above, with the addition
 of two middleware.
 
 ```go
@@ -242,11 +236,11 @@ type messageData struct {
 
 ### Logging
 
-lambdah provides some built-in logging support using middleware. Logging can be 
+**lambdah** provides some built-in logging support using middleware. Logging can be 
 an opinionated matter, so using this is completely optional.
 
-To enable a logger on any type of handler, attach its `LoggerMiddleware`. This 
-attaches a [zerolog](https://github.com/rs/zerolog) logger to the context of 
+To enable a logger on any type of handler, attach its `LoggerMiddleware`. This
+attaches a [zerolog](https://github.com/rs/zerolog) logger to the context of
 each event. Two arguments are required to use the logger middleware:
  
 * an `io.Writer` to write log messages to
@@ -261,28 +255,27 @@ lambdah.
 	Start()
 ```
 
-The Logger middleware will, by default, log the status of each processed event with 
-some basic details about the event. The logger can also be accessed within your 
+The logger middleware will, by default, log the status of each processed event with
+some basic details about the event. The logger can also be accessed within your
 handlers and custom middleware.
 
 ```go
 func handler(c *lambdah.Context) error {
 	logger := log.LoggerFromContext(c.Context)
 	logger.Info().Msg("hello logs")
-	
 	return c.String(http.StatusOK, "Hello world!")
 }
 ```
 
 ### Correlation IDs
 
-lambdah provides an optional `CorrelationIDMiddleware` for all of its handlers.
+**lambdah** provides an optional `CorrelationIDMiddleware` for all of its handlers.
 This middleware retrieves or creates a Correlation ID, which is often used for
-tracing requests through distributed systems in logs. This correlation ID is 
+tracing requests through distributed systems in logs. This correlation ID is
 always a v4 UUID e.g. `9187bcbb-052b-45e5-bffa-99f323a8aa71`.
 
-When used in conjunction with the `LoggerMiddleware`, each log message includes 
-the Correlation ID. Note that the `CorrelationIDMiddleware` must be included 
+When used in conjunction with the `LoggerMiddleware`, each log message includes
+the Correlation ID. Note that the `CorrelationIDMiddleware` must be included
 before the `LoggerMiddleware`.
 
 The Correlation ID can also be accessed from within handlers and custom middleware:
@@ -290,10 +283,8 @@ The Correlation ID can also be accessed from within handlers and custom middlewa
 ```go
 func handler(c *lambdah.Context) error {
 	cid := log.CorrelationIDFromContext(c.Context)
-	
 	// log correlation id for example
 	fmt.Println(cid)
-
 	return c.String(http.StatusOK, "Hello world!")
 }
 ```
